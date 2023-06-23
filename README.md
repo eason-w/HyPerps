@@ -4,4 +4,4 @@ For more details, read the HyPerps Technical Explanatory document.
 
 HyPerps is still an MVP project built for the ETHGlobal Waterloo 2023 hackathon.
 
-If you have any questions, feel free to DM me on Twitter (https://twitter.com/easonwu_), Telegram (RealEasonWu), or email (real.ewu4@gmail.com)
+If you have any questions, feel free to DM me on [Twitter](https://twitter.com/easonwu_), Telegram (RealEasonWu), or [email](real.ewu4@gmail.com)
