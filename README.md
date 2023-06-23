@@ -1,2 +1,2 @@
 # HyPerps
-HyPerps crosschain perps
+HyPerps crosschain perps is really cool
