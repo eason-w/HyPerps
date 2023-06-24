@@ -1,5 +1,0 @@
-{
-  "dependencies": {
-    "@pythnetwork/pyth-sdk-solidity": "^2.2.1"
-  }
-}
