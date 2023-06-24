@@ -1,8 +1,10 @@
 pragma solidity >=0.8.0 <0.9.0;
 //SPDX-License-Identifier: MIT
 
-// Importing Pyth interfaces for price feeds
 import "scaffold-eth/node_modules/@pythnetwork/pyth-sdk-solidity/IPyth.sol";
+import "scaffold-eth/node_modules/@pythnetwork/pyth-sdk-solidity/PythStructs.sol";
+import "scaffold-eth/node_modules/@pythnetwork/pyth-sdk-solidity/IPythEvents.sol";
+
 
 contract pythPriceFetcher{
     IPyth pyth;
@@ -18,46 +20,52 @@ contract pythPriceFetcher{
     // bytes32 mainnetBTCPriceId = 0xe62df6c8b4a85fe1a67db44dc12de5db330f7ac66b72dc658afedf0f4a415b43;
 
     // Latest price uint
-    uint256 USDCPrice;
-    uint256 ETHPrice;
-    uint256 BTCPrice;
+    int256 USDCPrice;
+    int256 ETHPrice;
+    int256 BTCPrice;
 
     // Gnosis mainnet: 0x2880ab155794e7179c9ee2e38200202908c17b43
     // Goerli testnet: 0xff1a0f4744e8582DF1aE09D5611b887B6a12925C
     // Polygon zkevm testnet: 0xd54bf1758b1c932f86b178f8b1d5d1a7e2f62c2e
-    constructor(
-        address _pyth,
-    ) {
+    constructor(address _pyth) {
         pyth = IPyth(_pyth);
     }
 
-    function getUSDCPrice() external payable {
+    // Viewable functions to view the latest updated price
+    function viewUSDCPrice() public view returns(int256) {
+        return USDCPrice;
+    }
+
+    function viewETHPrice() public view returns(int256) {
+        return ETHPrice;
+    }
+
+    function viewBTCPrice() public view returns(int256) {
+        return BTCPrice;
+    }
+
+    // Writeable functions to update the prices
+    function getUSDCPrice(bytes[] calldata pythUpdateData) external payable{
         uint updateFee = pyth.getUpdateFee(pythUpdateData);
         pyth.updatePriceFeeds{value: updateFee}(pythUpdateData);
 
-        PythStructs.Price memory USDCPrice = pyth.getPrice(
-            testnetUSDCPriceId
-        );
+        PythStructs.Price memory currentUSDCPrice = pyth.getPrice(testnetUSDCPriceId);
+        USDCPrice = int256(currentUSDCPrice.price);
     }
 
-    function getETHPrice() external payable {
+    function getETHPrice(bytes[] calldata pythUpdateData) external payable{
         uint updateFee = pyth.getUpdateFee(pythUpdateData);
         pyth.updatePriceFeeds{value: updateFee}(pythUpdateData);
 
-        PythStructs.Price memory ETHPrice = pyth.getPrice(
-            testnetETHPriceId
-        );
+        PythStructs.Price memory currentETHPrice = pyth.getPrice(testnetETHPriceId);
+        ETHPrice = int256(currentETHPrice.price);
     }
-
-    function getBTCPrice() external payable {
+    
+    function getBTCPrice(bytes[] calldata pythUpdateData) external payable{
         uint updateFee = pyth.getUpdateFee(pythUpdateData);
         pyth.updatePriceFeeds{value: updateFee}(pythUpdateData);
 
-        PythStructs.Price memory BTCPrice = pyth.getPrice(
-            testnetBTCPriceId
-        );
+        PythStructs.Price memory currentBTCPrice = pyth.getPrice(testnetBTCPriceId);
+        BTCPrice = int256(currentBTCPrice.price);
     }
-
-    receive() external payable {}
-}
 }
