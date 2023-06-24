@@ -4,7 +4,7 @@ pragma solidity >=0.8.0 <0.9.0;
 import "scaffold-eth/node_modules/@openzeppelin/contracts/access/Ownable.sol";
 import "scaffold-eth/node_modules/@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-contract SingleChainPerpsProtocol{
+contract SingleChainPerpsProtocol is Ownable{
 
     // Data types
     struct Position {
@@ -46,6 +46,10 @@ contract SingleChainPerpsProtocol{
     event PositionClosed(address indexed user, uint256 positionIndex, uint256 pnl);
     event PositionLiquidated(address indexed liquidator, address indexed positionOpener, uint256 positionIndex, address indexed collateralType, uint256 collateralSize);
     
+    // Goerli addresses: 
+    // USDC (0x52b13B2f6804D659aa7A55e8d06410DFa9B805B8) 
+    // wETH (0x58d7ccbE88Fe805665eB0b6c219F2c27D351E649)
+    // wBTC (0x29a500d11467A2160a02ABa4f9F94983E458d873)
     // Constructor
     constructor(address _USDC, address _wETH, address _wBTC) {
         USDC = _USDC;
@@ -82,7 +86,7 @@ contract SingleChainPerpsProtocol{
         return liquidityPoolShare[user];
     }
 
-    function getPositionInfo(uint256 positionIndex) external view returns (bool, address, address, uint256, uint256, uint256, uint256, uint256) {
+    function getPositionInfo(uint256 positionIndex) external view returns (bool, address, address, address, uint256, uint256, uint256, uint256) {
         Position storage position = positions[positionIndex];
 
         return (
@@ -104,7 +108,7 @@ contract SingleChainPerpsProtocol{
         require((liquidityType == USDC || liquidityType == wETH || liquidityType == wBTC), "Unsupported liquidity type");
 
         IERC20 liquidityToken = IERC20(liquidityType);
-        liquidityToken.transferFrom(msg.sender, this(address), amount);
+        liquidityToken.transferFrom(msg.sender, address(this), amount);
         
         if (liquidityType == USDC) {
             liquidityPoolShare[msg.sender] += (amount);
@@ -137,17 +141,17 @@ contract SingleChainPerpsProtocol{
 
     function depositCollateral(address collateralType, uint256 amount) external {
         require(amount > 0, "Invalid deposit amount");
-        require((collateralType == USDC || collateralType == wETH || collateralType == wBTC), "Unsupported liquidity type");
+        require((collateralType == USDC || collateralType == wETH || collateralType == wBTC), "Unsupported collateral type");
 
         IERC20 token = IERC20(collateralType);
-        token.transferFrom(msg.sender, this(address), amount);
+        token.transferFrom(msg.sender, address(this), amount);
         
         if (collateralType == USDC) {
             USDCCollateralBalance[msg.sender] += amount;
         } else if (collateralType == wETH) {
-            wETHCollateralBalance[msg.sender] += amount;
+            ETHCollateralBalance[msg.sender] += amount;
         } else if (collateralType == wBTC) {
-            wBTCCollateralBalance[msg.sender] += amount; 
+            BTCCollateralBalance[msg.sender] += amount; 
         }
 
         emit CollateralDeposited(msg.sender, collateralType, amount);
@@ -162,12 +166,12 @@ contract SingleChainPerpsProtocol{
             USDCCollateralBalance[msg.sender] -= amount;
             IERC20(USDC).transfer(msg.sender, amount);
         } else if (collateralType == wETH) {
-            require(wETHCollateralBalance[msg.sender] >= amount, "Insufficient wETH collateral balance");
-            wETHCollateralBalance[msg.sender] -= amount;
+            require(ETHCollateralBalance[msg.sender] >= amount, "Insufficient wETH collateral balance");
+            ETHCollateralBalance[msg.sender] -= amount;
             IERC20(wETH).transfer(msg.sender, amount);
         } else if (collateralType == wBTC) {
-            require(wBTCCollateralBalance[msg.sender] >= amount, "Insufficient wBTC collateral balance");
-            wBTCCollateralBalance[msg.sender] -= amount;
+            require(BTCCollateralBalance[msg.sender] >= amount, "Insufficient wBTC collateral balance");
+            BTCCollateralBalance[msg.sender] -= amount;
             IERC20(wBTC).transfer(msg.sender, amount);
         }
 
@@ -186,6 +190,8 @@ contract SingleChainPerpsProtocol{
 
         uint256 positionSize = collateralSize * leverage;
 
+        uint256 openingPrice;
+
         if (assetType == wETH) {
             uint256 openingPrice = ETHPrice;
         } else {
@@ -194,9 +200,9 @@ contract SingleChainPerpsProtocol{
 
         uint256 liquidationPrice;
         if (collateralType == USDC) {
-            liquidationPrice = openingPrice + (openingPrice / leverage * 0.95);
+            liquidationPrice = openingPrice + (openingPrice / leverage * 19/20);
         } else {
-            liquidationPrice = openingPrice - (openingPrice / leverage * 1.05);
+            liquidationPrice = openingPrice - (openingPrice / leverage * 21/20);
         }
 
         positions.push(Position({
@@ -224,6 +230,7 @@ contract SingleChainPerpsProtocol{
     function closePosition(uint256 positionIndex) external onlyOpenPosition(positionIndex) {
         Position storage position = positions[positionIndex];
 
+        uint256 closingPrice;
         if (position.assetType == wETH) {
             uint256 closingPrice = ETHPrice;
         } else {
@@ -236,6 +243,7 @@ contract SingleChainPerpsProtocol{
             uint256 pnl = ((closingPrice / position.openingPrice - 1) * position.leverage) * position.collateralSize;
         }
 
+        uint256 pnl;
         if (pnl > 0) {
             if (position.collateralType == USDC) {
                 USDCCollateralBalance[msg.sender] += pnl;
@@ -262,6 +270,7 @@ contract SingleChainPerpsProtocol{
     function liquidate(uint256 positionIndex) external onlyOpenPosition(positionIndex) {
         Position storage position = positions[positionIndex];
 
+        uint256 currentPrice;
         if (position.assetType == wETH) {
             uint256 currentPrice = ETHPrice;
         } else {
@@ -293,15 +302,15 @@ contract SingleChainPerpsProtocol{
     }
 
     // Private write functions
-    function updateUSDCPrice(uint256 newUSDCPrice) external onlyOwner {
+    function updateUSDCPrice(uint256 newUSDCPrice) external onlyOwner() {
         USDCPrice = newUSDCPrice;
     }
 
-    function updateETHPrice(uint256 newETHPrice) external onlyOwner {
+    function updateETHPrice(uint256 newETHPrice) external onlyOwner() {
         ETHPrice = newETHPrice;
     }
 
-    function updateBTCPrice(uint256 newBTCPrice) external onlyOwner {
+    function updateBTCPrice(uint256 newBTCPrice) external onlyOwner() {
         BTCPrice = newBTCPrice;
     }
 
