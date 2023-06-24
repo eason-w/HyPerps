@@ -1,8 +1,8 @@
 pragma solidity >=0.8.0 <0.9.0;
 //SPDX-License-Identifier: MIT
 
-import "./pythTestnetPriceFetcher";
-import "@openzeppelin/contracts/access/Ownable.sol";
+import "./pythTestnetPriceFetcher.sol";
+import "scaffold-eth/node_modules/@openzeppelin/contracts/access/Ownable.sol";
 
 contract SingleChainPerpsProtocol{
 
@@ -31,9 +31,16 @@ contract SingleChainPerpsProtocol{
     uint256 USDCPrice = 1;
     uint256 ETHPrice = 1000;
     uint256 BTCPrice = 10000;
+
+    address USDC;
+    address wETH;
+    address wBTC;
     
     // Constructor
-    constructor() {
+    constructor(address _USDC, address _wETH, address _wBTC) {
+        USDC = _USDC;
+        wETH = _wETH;
+        wBTC = _wBTC;
     }
     
     // Modifiers
@@ -41,8 +48,13 @@ contract SingleChainPerpsProtocol{
         require(positions[positionIndex].isOpen, "Position is not open");
         _;
     }
+    // onlyOwner() is also a modifier here, imported from OpenZeppelin
+
+    // Read functions
     
-    function depositCollateral(bytes32 collateralType, uint256 amount) external {
+
+    // Public write functions
+    function depositCollateral(string collateralType, uint256 amount) external {
         require(supportedCollateralTypes[collateralType], "Unsupported collateral type");
         require(amount > 0, "Invalid deposit amount");
         
@@ -95,6 +107,9 @@ contract SingleChainPerpsProtocol{
             "Position is not eligible for liquidation"
         );
         
-        uint256 pnl = ((currentPrice / position.openingPrice - 1) * position.leverage) * position
+        uint256 pnl = ((currentPrice / position.openingPrice - 1) * position.leverage) * position;
+    }
+
+    // Private write functions
 
 }
