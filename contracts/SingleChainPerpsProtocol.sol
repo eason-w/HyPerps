@@ -46,10 +46,7 @@ contract SingleChainPerpsProtocol is Ownable{
     event PositionClosed(address indexed user, uint256 positionIndex, uint256 pnl);
     event PositionLiquidated(address indexed liquidator, address indexed positionOpener, uint256 positionIndex, address indexed collateralType, uint256 collateralSize);
     
-    // Goerli addresses: 
-    // USDC (0x52b13B2f6804D659aa7A55e8d06410DFa9B805B8) 
-    // wETH (0x58d7ccbE88Fe805665eB0b6c219F2c27D351E649)
-    // wBTC (0x29a500d11467A2160a02ABa4f9F94983E458d873)
+    // Goerli addresses: USDC, wETH, wBTC: 0x3861e9F29fcAFF738906c7a3a495583eE7Ca4C18, 0x58d7ccbE88Fe805665eB0b6c219F2c27D351E649, 0x29a500d11467A2160a02ABa4f9F94983E458d873
     // Constructor
     constructor(address _USDC, address _wETH, address _wBTC) {
         USDC = _USDC;
@@ -285,13 +282,13 @@ contract SingleChainPerpsProtocol is Ownable{
             uint256 collateralSize = position.collateralSize;
 
             if (collateralType == USDC) {
-                USDCCollateralBalance[liquidator] += collateralSize*0.05;
+                USDCCollateralBalance[liquidator] += collateralSize*1/20;
                 USDCCollateralBalance[positionOpener] -= collateralSize;
             } else if (collateralType == wETH) {
-                ETHCollateralBalance[liquidator] += collateralSize*0.05;
+                ETHCollateralBalance[liquidator] += collateralSize*1/20;
                 ETHCollateralBalance[positionOpener] -= collateralSize;
             } else if (collateralType == wBTC) {
-                BTCCollateralBalance[liquidator] += collateralSize*0.05;
+                BTCCollateralBalance[liquidator] += collateralSize*1/20;
                 BTCCollateralBalance[positionOpener] -= collateralSize;
             }
 
