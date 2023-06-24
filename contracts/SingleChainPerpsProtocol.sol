@@ -1,33 +1,42 @@
 pragma solidity >=0.8.0 <0.9.0;
 //SPDX-License-Identifier: MIT
 
-contract SingleChainPerpsProtocol is {
-pragma solidity ^0.8.0;
+import "./pythTestnetPriceFetcher";
+import "@openzeppelin/contracts/access/Ownable.sol";
 
+contract SingleChainPerpsProtocol{
+
+    // Data types
     struct Position {
         bool isOpen;
-        address owner;
-        bytes32 assetType;
-        bytes32 collateralType;
+
+        address positionOpener;
+
+        string assetType;
+        string collateralType;
+
         uint256 collateralSize;
         uint256 leverage;
         uint256 openingPrice;
         uint256 liquidationPrice;
     }
     
-    mapping(address => uint256) public collateralBalances;
-    mapping(bytes32 => bool) public supportedCollateralTypes;
-    mapping(uint256 => Position) public positions;
-    uint256 public positionCount;
-    PythPriceOracle public priceOracle;
+    mapping(address => uint256) public USDCCollateralBalance;
+    mapping(address => uint256) public ETHCollateralBalance;
+    mapping(address => uint256) public BTCCollateralBalance;
+
+    Position[] public positions;
     
-    constructor(address _priceOracle) {
-        priceOracle = PythPriceOracle(_priceOracle);
-        supportedCollateralTypes["USDC"] = true;
-        supportedCollateralTypes["wETH"] = true;
-        supportedCollateralTypes["wBTC"] = true;
+    // FOR TESTING PURPOSES: Prices will be set manually by owner, with initial prices also set 
+    uint256 USDCPrice = 1;
+    uint256 ETHPrice = 1000;
+    uint256 BTCPrice = 10000;
+    
+    // Constructor
+    constructor() {
     }
     
+    // Modifiers
     modifier onlyOpenPosition(uint256 positionIndex) {
         require(positions[positionIndex].isOpen, "Position is not open");
         _;
