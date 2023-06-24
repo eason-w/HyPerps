@@ -25,6 +25,8 @@ contract SingleChainPerpsProtocol{
     mapping(address => uint256) public ETHCollateralBalance;
     mapping(address => uint256) public BTCCollateralBalance;
 
+    mapping(address => uint256) public liquidityPoolShare;
+
     Position[] public positions;
     
     // FOR TESTING PURPOSES: Prices will be set manually by owner, with initial prices also set 
@@ -50,10 +52,45 @@ contract SingleChainPerpsProtocol{
     }
     // onlyOwner() is also a modifier here, imported from OpenZeppelin
 
-    // Read functions
-    
+    // Read functions    
 
     // Public write functions
+    function depositLiquidity(address liquidityType, uint256 amount) external {
+        require(amount > 0, "Invalid deposit amount");
+        require((liquidityType == USDC || liquidityType == wETH || liquidityType == wBTC), "Unsupported liquidity type");
+
+        IERC20 liquidityToken = IERC20(liquidityType);
+        liquidityToken.transferFrom(msg.sender, this(address), amount);
+        
+        if (collateralType == USDC) {
+            liquidityPoolShare[msg.sender] += (amount);
+        } else if (collateralType == wETH) {
+            liquidityPoolShare[msg.sender] += (amount*ETHPrice);
+        } else if (collateralType == wBTC) {
+            liquidityPoolShare[msg.sender] += (amount*BTCPrice); 
+        } else {
+            return;
+        }
+    }   
+
+    function withdrawLiquidity(address liquidityType, uint256 amount) external {
+        require(amount > 0, "Invalid withdraw amount");
+        require((liquidityType == USDC || liquidityType == wETH || liquidityType == wBTC), "Unsupported liquidity type");
+        require(liquidityPoolShare[msg.sender] >= amount, "Insufficient USDC collateral balance");
+
+        liquidityPoolShare[msg.sender] -= amount;
+
+        if (collateralType == USDC) {
+            IERC20(USDC).transfer(msg.sender, amount);
+        } else if (collateralType == wETH) {
+            IERC20(wETH).transfer(msg.sender, (amount/ETHPrice));
+        } else if (collateralType == wBTC) {
+            IERC20(wBTC).transfer(msg.sender, (amount/BTCPrice));
+        } else {
+            return;
+        }
+    }
+
     function depositCollateral(address collateralType, uint256 amount) external {
         require(amount > 0, "Invalid deposit amount");
         require((collateralType == USDC || collateralType == wETH || collateralType == wBTC), "Unsupported collateral type");
@@ -67,6 +104,8 @@ contract SingleChainPerpsProtocol{
             wETHCollateralBalance[msg.sender] += amount;
         } else if (collateralType == wBTC) {
             wBTCCollateralBalance[msg.sender] += amount; 
+        } else {
+            return;
         }
     }
 
@@ -86,12 +125,15 @@ contract SingleChainPerpsProtocol{
             require(wBTCCollateralBalance[msg.sender] >= amount, "Insufficient wBTC collateral balance");
             wBTCCollateralBalance[msg.sender] -= amount;
             IERC20(wBTC).transfer(msg.sender, amount);
+        } else {
+            return;
         }
     }
 
     
-    function openPosition(bytes32 assetType, bytes32 collateralType, uint256 collateralSize, uint256 leverage, bytes32 collateralChain) external {
-        require(supportedCollateralTypes[collateralType], "Unsupported collateral type");
+    function openPosition(address assetType, address collateralType, uint256 collateralSize, uint256 leverage) external {
+        require((assetType == USDC || collateralType == wETH || collateralType == wBTC), "Unsupported asset type");
+        require((collateralType == USDC || collateralType == wETH || collateralType == wBTC), "Unsupported collateral type");
         require(collateralBalances[msg.sender] >= collateralSize, "Insufficient collateral balance");
         require(leverage <= 10, "Invalid leverage");
         
@@ -125,7 +167,7 @@ contract SingleChainPerpsProtocol{
         position.isOpen = false;
     }
     
-    function liquidate(uint256 positionIndex, bytes32 collateralChain) external {
+    function liquidate(uint256 positionIndex, bytes32 collateralChain) external onlyOpenPosition(positionIndex) {
         Position storage position = positions[positionIndex];
         require(position.isOpen, "Position is not open");
         
