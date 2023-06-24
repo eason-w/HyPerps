@@ -68,8 +68,6 @@ contract SingleChainPerpsProtocol{
             liquidityPoolShare[msg.sender] += (amount*ETHPrice);
         } else if (liquidityType == wBTC) {
             liquidityPoolShare[msg.sender] += (amount*BTCPrice); 
-        } else {
-            return;
         }
     }   
 
@@ -86,8 +84,6 @@ contract SingleChainPerpsProtocol{
             IERC20(wETH).transfer(msg.sender, (amount/ETHPrice));
         } else if (liquidityType == wBTC) {
             IERC20(wBTC).transfer(msg.sender, (amount/BTCPrice));
-        } else {
-            return;
         }
     }
 
@@ -104,8 +100,6 @@ contract SingleChainPerpsProtocol{
             wETHCollateralBalance[msg.sender] += amount;
         } else if (collateralType == wBTC) {
             wBTCCollateralBalance[msg.sender] += amount; 
-        } else {
-            return;
         }
     }
 
@@ -125,8 +119,6 @@ contract SingleChainPerpsProtocol{
             require(wBTCCollateralBalance[msg.sender] >= amount, "Insufficient wBTC collateral balance");
             wBTCCollateralBalance[msg.sender] -= amount;
             IERC20(wBTC).transfer(msg.sender, amount);
-        } else {
-            return;
         }
     }
 
@@ -134,16 +126,25 @@ contract SingleChainPerpsProtocol{
     function openPosition(address assetType, address collateralType, uint256 collateralSize, uint256 leverage, address collateralChain) external {
         require(collateralSize > 0, "Invalid collateral size");
         require(leverage > 0 && leverage <= 10, "Invalid leverage value");
-        require((assetType != USDC), "Cannot long or short USDC");
+        if (collateralType == USDC) {
+            require(assetType != USDC);
+        } else {
+            require(collateralType == assetType);
+        }
 
         uint256 positionSize = collateralSize * leverage;
-        uint256 openingPrice = PythTestnetPriceFetcher.getPrice(assetType, collateralChain);
+
+        if (assetType == ETH) {
+            uint256 openingPrice = ETHPrice;
+        } else {
+            uint256 openingPrice = BTCPrice;
+        }
 
         uint256 liquidationPrice;
         if (collateralType == USDC) {
-            liquidationPrice = openingPrice * (openingPrice / leverage) * 95 / 100;
+            liquidationPrice = openingPrice + (openingPrice / leverage * 0.95);
         } else {
-            liquidationPrice = openingPrice * (openingPrice / leverage) * 105 / 100;
+            liquidationPrice = openingPrice - (openingPrice / leverage * 1.05);
         }
 
         positions.push(Position({
