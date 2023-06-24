@@ -62,6 +62,42 @@ contract SingleChainPerpsProtocol{
     // onlyOwner() is also a modifier here, imported from OpenZeppelin
 
     // Read functions    
+    function getTotalUSDCollateral(address user) external view returns (uint256) {
+        uint256 totalCollateral = 0;
+        totalCollateral += USDCCollateralBalance[user];
+        totalCollateral += ETHCollateralBalance[user] * ETHPrice;
+        totalCollateral += BTCCollateralBalance[user] * BTCPrice;
+        return totalCollateral;
+    }
+    
+    function getCollateralBalances(address user) external view returns (uint256[3] memory) {
+        uint256[3] memory collateralBalances;
+        collateralBalances[0] = USDCCollateralBalance[user];
+        collateralBalances[1] = ETHCollateralBalance[user];
+        collateralBalances[2] = BTCCollateralBalance[user];
+        
+        return collateralBalances;
+    }
+
+    function getLiquidityPoolShares(address user) external view returns (uint256) {
+        return liquidityPoolShare[user];
+    }
+
+    function getPositionInfo(uint256 positionIndex) external view returns (bool, address, address, uint256, uint256, uint256, uint256, uint256) {
+        Position storage position = positions[positionIndex];
+
+        return (
+            position.isOpen,
+            position.positionOpener,
+            position.collateralType,
+            position.assetType,
+            position.collateralSize,
+            position.leverage,
+            position.openingPrice,
+            position.liquidationPrice
+        );
+    }
+
 
     // Public write functions, liquidity and collateral functions
     function depositLiquidity(address liquidityType, uint256 amount) external {
