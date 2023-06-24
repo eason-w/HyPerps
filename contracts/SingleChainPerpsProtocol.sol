@@ -151,7 +151,7 @@ contract SingleChainPerpsProtocol{
 
         uint256 positionSize = collateralSize * leverage;
 
-        if (assetType == ETH) {
+        if (assetType == wETH) {
             uint256 openingPrice = ETHPrice;
         } else {
             uint256 openingPrice = BTCPrice;
@@ -189,8 +189,17 @@ contract SingleChainPerpsProtocol{
     function closePosition(uint256 positionIndex) external onlyOpenPosition(positionIndex) {
         Position storage position = positions[positionIndex];
 
-        uint256 closingPrice = PythTestnetPriceFetcher.getPrice(position.assetType, msg.sender);
-        uint256 pnl = ((closingPrice / position.openingPrice - 1) * position.leverage) * position.collateralSize;
+        if (position.assetType == wETH) {
+            uint256 closingPrice = ETHPrice;
+        } else {
+            uint256 closingPrice = BTCPrice;
+        }
+
+        if (position.collateralType == USDC) {
+            uint256 pnl = ((position.openingPrice / closingPrice - 1) * position.leverage) * position.collateralSize;
+        } else {
+            uint256 pnl = ((closingPrice / position.openingPrice - 1) * position.leverage) * position.collateralSize;
+        }
 
         if (pnl > 0) {
             if (position.collateralType == USDC) {
@@ -215,26 +224,30 @@ contract SingleChainPerpsProtocol{
         emit PositionClosed(msg.sender, positionIndex, pnl);
     }
     
-    function liquidate(uint256 positionIndex, address destinationChain) external {
+    function liquidate(uint256 positionIndex) external onlyOpenPosition(positionIndex) {
         Position storage position = positions[positionIndex];
 
-        uint256 currentPrice = PythTestnetPriceFetcher.getPrice(position.assetType, msg.sender);
+        if (position.assetType == wETH) {
+            uint256 currentPrice = ETHPrice;
+        } else {
+            uint256 currentPrice = BTCPrice;
+        }
 
-        if ((position.collateralType == USDC && currentPrice <= position.liquidationPrice) ||
-            (position.collateralType != USDC && currentPrice >= position.liquidationPrice)) {
+        if ((position.collateralType == USDC && currentPrice >= position.liquidationPrice) ||
+            (position.collateralType != USDC && currentPrice <= position.liquidationPrice)) {
             address liquidator = msg.sender;
             address positionOpener = position.positionOpener;
             address collateralType = position.collateralType;
             uint256 collateralSize = position.collateralSize;
 
             if (collateralType == USDC) {
-                USDCCollateralBalance[liquidator] += collateralSize;
+                USDCCollateralBalance[liquidator] += collateralSize*0.05;
                 USDCCollateralBalance[positionOpener] -= collateralSize;
             } else if (collateralType == wETH) {
-                ETHCollateralBalance[liquidator] += collateralSize;
+                ETHCollateralBalance[liquidator] += collateralSize*0.05;
                 ETHCollateralBalance[positionOpener] -= collateralSize;
             } else if (collateralType == wBTC) {
-                BTCCollateralBalance[liquidator] += collateralSize;
+                BTCCollateralBalance[liquidator] += collateralSize*0.05;
                 BTCCollateralBalance[positionOpener] -= collateralSize;
             }
 
