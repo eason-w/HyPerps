@@ -37,6 +37,15 @@ contract SingleChainPerpsProtocol{
     address USDC;
     address wETH;
     address wBTC;
+
+    // Events
+    event LiquidityDeposited(address indexed user, address indexed liquidityType, uint256 amount);
+    event LiquidityWithdrawn(address indexed user, address indexed liquidityType, uint256 amount);
+    event CollateralDeposited(address indexed user, address indexed collateralType, uint256 amount);
+    event CollateralWithdrawn(address indexed user, address indexed collateralType, uint256 amount);
+    event PositionOpened(address indexed user, address indexed assetType, address indexed collateralType, uint256 collateralSize, uint256 leverage);
+    event PositionClosed(address indexed user, uint256 positionIndex, uint256 pnl);
+    event PositionLiquidated(address indexed liquidator, address indexed positionOpener, uint256 positionIndex, address indexed collateralType, uint256 collateralSize);
     
     // Constructor
     constructor(address _USDC, address _wETH, address _wBTC) {
@@ -69,6 +78,8 @@ contract SingleChainPerpsProtocol{
         } else if (liquidityType == wBTC) {
             liquidityPoolShare[msg.sender] += (amount*BTCPrice); 
         }
+
+        emit LiquidityDeposited(msg.sender, liquidityType, amount);
     }   
 
     function withdrawLiquidity(address liquidityType, uint256 amount) external {
@@ -85,6 +96,8 @@ contract SingleChainPerpsProtocol{
         } else if (liquidityType == wBTC) {
             IERC20(wBTC).transfer(msg.sender, (amount/BTCPrice));
         }
+
+        emit LiquidityWithdrawn(msg.sender, liquidityType, amount);
     }
 
     function depositCollateral(address collateralType, uint256 amount) external {
@@ -101,6 +114,8 @@ contract SingleChainPerpsProtocol{
         } else if (collateralType == wBTC) {
             wBTCCollateralBalance[msg.sender] += amount; 
         }
+
+        emit CollateralDeposited(msg.sender, collateralType, amount);
     }
 
     function withdrawCollateral(address collateralType, uint256 amount) external {
@@ -120,6 +135,8 @@ contract SingleChainPerpsProtocol{
             wBTCCollateralBalance[msg.sender] -= amount;
             IERC20(wBTC).transfer(msg.sender, amount);
         }
+
+        emit CollateralWithdrawn(msg.sender, collateralType, amount);
     }
 
     // Public write functions, position manager collateral functions
@@ -165,6 +182,8 @@ contract SingleChainPerpsProtocol{
         } else if (collateralType == wBTC) {
             BTCCollateralBalance[msg.sender] -= collateralSize;
         }
+
+        emit PositionOpened(msg.sender, assetType, collateralType, collateralSize, leverage);
     }
     
     function closePosition(uint256 positionIndex) external onlyOpenPosition(positionIndex) {
@@ -192,6 +211,8 @@ contract SingleChainPerpsProtocol{
         }
 
         position.isOpen = false;
+
+        emit PositionClosed(msg.sender, positionIndex, pnl);
     }
     
     function liquidate(uint256 positionIndex, address destinationChain) external {
@@ -218,9 +239,22 @@ contract SingleChainPerpsProtocol{
             }
 
             position.isOpen = false;
+
+            emit PositionLiquidated(liquidator, positionOpener, positionIndex, collateralType, collateralSize);
         }
     }
 
     // Private write functions
+    function updateUSDCPrice(uint256 newUSDCPrice) external onlyOwner {
+        USDCPrice = newUSDCPrice;
+    }
+
+    function updateETHPrice(uint256 newETHPrice) external onlyOwner {
+        ETHPrice = newETHPrice;
+    }
+
+    function updateBTCPrice(uint256 newBTCPrice) external onlyOwner {
+        BTCPrice = newBTCPrice;
+    }
 
 }
