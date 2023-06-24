@@ -3,6 +3,7 @@ pragma solidity >=0.8.0 <0.9.0;
 
 import "./pythTestnetPriceFetcher.sol";
 import "scaffold-eth/node_modules/@openzeppelin/contracts/access/Ownable.sol";
+import "scaffold-eth/node_modules/@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 contract SingleChainPerpsProtocol{
 
@@ -11,9 +12,8 @@ contract SingleChainPerpsProtocol{
         bool isOpen;
 
         address positionOpener;
-
-        string assetType;
-        string collateralType;
+        address collateralType;
+        address assetType;
 
         uint256 collateralSize;
         uint256 leverage;
@@ -54,12 +54,41 @@ contract SingleChainPerpsProtocol{
     
 
     // Public write functions
-    function depositCollateral(string collateralType, uint256 amount) external {
-        require(supportedCollateralTypes[collateralType], "Unsupported collateral type");
+    function depositCollateral(address collateralType, uint256 amount) external {
         require(amount > 0, "Invalid deposit amount");
+        require((collateralType == USDC || collateralType == wETH || collateralType == wBTC), "Unsupported collateral type");
+
+        IERC20 token = IERC20(collateralType);
+        token.transferFrom(msg.sender, this(address), amount);
         
-        collateralBalances[msg.sender] += amount;
+        if (collateralType == USDC) {
+            USDCCollateralBalance[msg.sender] += amount;
+        } else if (collateralType == wETH) {
+            wETHCollateralBalance[msg.sender] += amount;
+        } else if (collateralType == wBTC) {
+            wBTCCollateralBalance[msg.sender] += amount; 
+        }
     }
+
+    function withdrawCollateral(address collateralType, uint256 amount) external {
+        require(amount > 0, "Invalid withdrawal amount");
+        require((collateralType == USDC || collateralType == wETH || collateralType == wBTC), "Unsupported collateral type");
+
+        if (collateralType == USDC) {
+            require(USDCCollateralBalance[msg.sender] >= amount, "Insufficient USDC collateral balance");
+            USDCCollateralBalance[msg.sender] -= amount;
+            IERC20(USDC).transfer(msg.sender, amount);
+        } else if (collateralType == wETH) {
+            require(wETHCollateralBalance[msg.sender] >= amount, "Insufficient wETH collateral balance");
+            wETHCollateralBalance[msg.sender] -= amount;
+            IERC20(wETH).transfer(msg.sender, amount);
+        } else if (collateralType == wBTC) {
+            require(wBTCCollateralBalance[msg.sender] >= amount, "Insufficient wBTC collateral balance");
+            wBTCCollateralBalance[msg.sender] -= amount;
+            IERC20(wBTC).transfer(msg.sender, amount);
+        }
+    }
+
     
     function openPosition(bytes32 assetType, bytes32 collateralType, uint256 collateralSize, uint256 leverage, bytes32 collateralChain) external {
         require(supportedCollateralTypes[collateralType], "Unsupported collateral type");
