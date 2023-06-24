@@ -54,7 +54,7 @@ contract SingleChainPerpsProtocol{
 
     // Read functions    
 
-    // Public write functions
+    // Public write functions, liquidity and collateral functions
     function depositLiquidity(address liquidityType, uint256 amount) external {
         require(amount > 0, "Invalid deposit amount");
         require((liquidityType == USDC || liquidityType == wETH || liquidityType == wBTC), "Unsupported liquidity type");
@@ -62,11 +62,11 @@ contract SingleChainPerpsProtocol{
         IERC20 liquidityToken = IERC20(liquidityType);
         liquidityToken.transferFrom(msg.sender, this(address), amount);
         
-        if (collateralType == USDC) {
+        if (liquidityType == USDC) {
             liquidityPoolShare[msg.sender] += (amount);
-        } else if (collateralType == wETH) {
+        } else if (liquidityType == wETH) {
             liquidityPoolShare[msg.sender] += (amount*ETHPrice);
-        } else if (collateralType == wBTC) {
+        } else if (liquidityType == wBTC) {
             liquidityPoolShare[msg.sender] += (amount*BTCPrice); 
         } else {
             return;
@@ -80,11 +80,11 @@ contract SingleChainPerpsProtocol{
 
         liquidityPoolShare[msg.sender] -= amount;
 
-        if (collateralType == USDC) {
+        if (liquidityType == USDC) {
             IERC20(USDC).transfer(msg.sender, amount);
-        } else if (collateralType == wETH) {
+        } else if (liquidityType == wETH) {
             IERC20(wETH).transfer(msg.sender, (amount/ETHPrice));
-        } else if (collateralType == wBTC) {
+        } else if (liquidityType == wBTC) {
             IERC20(wBTC).transfer(msg.sender, (amount/BTCPrice));
         } else {
             return;
@@ -93,7 +93,7 @@ contract SingleChainPerpsProtocol{
 
     function depositCollateral(address collateralType, uint256 amount) external {
         require(amount > 0, "Invalid deposit amount");
-        require((collateralType == USDC || collateralType == wETH || collateralType == wBTC), "Unsupported collateral type");
+        require((collateralType == USDC || collateralType == wETH || collateralType == wBTC), "Unsupported liquidity type");
 
         IERC20 token = IERC20(collateralType);
         token.transferFrom(msg.sender, this(address), amount);
@@ -130,55 +130,94 @@ contract SingleChainPerpsProtocol{
         }
     }
 
-    
-    function openPosition(address assetType, address collateralType, uint256 collateralSize, uint256 leverage) external {
-        require((assetType == USDC || collateralType == wETH || collateralType == wBTC), "Unsupported asset type");
-        require((collateralType == USDC || collateralType == wETH || collateralType == wBTC), "Unsupported collateral type");
-        require(collateralBalances[msg.sender] >= collateralSize, "Insufficient collateral balance");
-        require(leverage <= 10, "Invalid leverage");
-        
+    // Public write functions, position manager collateral functions
+    function openPosition(address assetType, address collateralType, uint256 collateralSize, uint256 leverage, address collateralChain) external {
+        require(collateralSize > 0, "Invalid collateral size");
+        require(leverage > 0 && leverage <= 10, "Invalid leverage value");
+        require((assetType != USDC), "Cannot long or short USDC");
+
         uint256 positionSize = collateralSize * leverage;
-        uint256 openingPrice = priceOracle.getPrice(assetType);
-        uint256 liquidationPrice = openingPrice * (openingPrice / (leverage * 10 / 100));
-        
-        positions[positionCount] = Position({
+        uint256 openingPrice = PythTestnetPriceFetcher.getPrice(assetType, collateralChain);
+
+        uint256 liquidationPrice;
+        if (collateralType == USDC) {
+            liquidationPrice = openingPrice * (openingPrice / leverage) * 95 / 100;
+        } else {
+            liquidationPrice = openingPrice * (openingPrice / leverage) * 105 / 100;
+        }
+
+        positions.push(Position({
             isOpen: true,
-            owner: msg.sender,
-            assetType: assetType,
+            positionOpener: msg.sender,
             collateralType: collateralType,
+            assetType: assetType,
             collateralSize: collateralSize,
             leverage: leverage,
             openingPrice: openingPrice,
             liquidationPrice: liquidationPrice
-        });
-        
-        collateralBalances[msg.sender] -= collateralSize;
-        positionCount++;
+        }));
+
+        if (collateralType == USDC) {
+            USDCCollateralBalance[msg.sender] -= collateralSize;
+        } else if (collateralType == wETH) {
+            ETHCollateralBalance[msg.sender] -= collateralSize;
+        } else if (collateralType == wBTC) {
+            BTCCollateralBalance[msg.sender] -= collateralSize;
+        }
     }
     
-    function closePosition(uint256 positionIndex, bytes32 collateralChain) external onlyOpenPosition(positionIndex) {
+    function closePosition(uint256 positionIndex) external onlyOpenPosition(positionIndex) {
         Position storage position = positions[positionIndex];
-        require(position.owner == msg.sender, "You are not the owner of this position");
-        
-        uint256 closingPrice = priceOracle.getPrice(position.assetType);
+
+        uint256 closingPrice = PythTestnetPriceFetcher.getPrice(position.assetType, msg.sender);
         uint256 pnl = ((closingPrice / position.openingPrice - 1) * position.leverage) * position.collateralSize;
-        
-        collateralBalances[msg.sender] += position.collateralSize + pnl;
+
+        if (pnl > 0) {
+            if (position.collateralType == USDC) {
+                USDCCollateralBalance[msg.sender] += pnl;
+            } else if (position.collateralType == wETH) {
+                ETHCollateralBalance[msg.sender] += pnl;
+            } else if (position.collateralType == wBTC) {
+                BTCCollateralBalance[msg.sender] += pnl;
+            }
+        } else {
+            if (position.collateralType == USDC) {
+                USDCCollateralBalance[msg.sender] -= pnl;
+            } else if (position.collateralType == wETH) {
+                ETHCollateralBalance[msg.sender] -= pnl;
+            } else if (position.collateralType == wBTC) {
+                BTCCollateralBalance[msg.sender] -= pnl;
+            }
+        }
+
         position.isOpen = false;
     }
     
-    function liquidate(uint256 positionIndex, bytes32 collateralChain) external onlyOpenPosition(positionIndex) {
+    function liquidate(uint256 positionIndex, address destinationChain) external {
         Position storage position = positions[positionIndex];
-        require(position.isOpen, "Position is not open");
-        
-        uint256 currentPrice = priceOracle.getPrice(position.assetType);
-        require(
-            (position.collateralType == "USDC" && currentPrice < position.liquidationPrice) ||
-            (position.collateralType != "USDC" && currentPrice > position.liquidationPrice),
-            "Position is not eligible for liquidation"
-        );
-        
-        uint256 pnl = ((currentPrice / position.openingPrice - 1) * position.leverage) * position;
+
+        uint256 currentPrice = PythTestnetPriceFetcher.getPrice(position.assetType, msg.sender);
+
+        if ((position.collateralType == USDC && currentPrice <= position.liquidationPrice) ||
+            (position.collateralType != USDC && currentPrice >= position.liquidationPrice)) {
+            address liquidator = msg.sender;
+            address positionOpener = position.positionOpener;
+            address collateralType = position.collateralType;
+            uint256 collateralSize = position.collateralSize;
+
+            if (collateralType == USDC) {
+                USDCCollateralBalance[liquidator] += collateralSize;
+                USDCCollateralBalance[positionOpener] -= collateralSize;
+            } else if (collateralType == wETH) {
+                ETHCollateralBalance[liquidator] += collateralSize;
+                ETHCollateralBalance[positionOpener] -= collateralSize;
+            } else if (collateralType == wBTC) {
+                BTCCollateralBalance[liquidator] += collateralSize;
+                BTCCollateralBalance[positionOpener] -= collateralSize;
+            }
+
+            position.isOpen = false;
+        }
     }
 
     // Private write functions
