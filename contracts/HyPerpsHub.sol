@@ -40,8 +40,9 @@ contract HyPerpsHub is Ownable{
     address wBTC;
 
     address mailboxContract;
-    address gnosisSpoke;
-    address pzkevmSpoke;
+
+    bytes32 gnosisSpoke;
+    bytes32 pzkevmSpoke;
 
     uint32 gnosisMainnet = 100;
     uint32 pzkevmTestnet = 1442;
@@ -117,45 +118,51 @@ contract HyPerpsHub is Ownable{
     }
 
     // CrossChain funtions
+    function _addressToBytes32(address _addr) internal pure returns (bytes32) {
+        return bytes32(uint256(uint160(_addr)));
+    }
+
     function handle(uint32 _origin, bytes32 _sender, bytes calldata _body) external onlyMailbox {
         (address sender, uint256 pnl, address collateralType) = abi.decode(_body, (address, uint256, address));
 
         if (pnl > 0) {
-            if (position.collateralType == USDC) {
+            if (collateralType == USDC) {
                 USDCCollateralBalance[sender] += pnl;
-            } else if (position.collateralType == wETH) {
+            } else if (collateralType == wETH) {
                 ETHCollateralBalance[sender] += pnl;
-            } else if (position.collateralType == wBTC) {
+            } else if (collateralType == wBTC) {
                 BTCCollateralBalance[sender] += pnl;
             }
         } else {
-            if (position.collateralType == USDC) {
+            if (collateralType == USDC) {
                 USDCCollateralBalance[sender] -= pnl;
-            } else if (position.collateralType == wETH) {
+            } else if (collateralType == wETH) {
                 ETHCollateralBalance[sender] -= pnl;
-            } else if (position.collateralType == wBTC) {
+            } else if (collateralType == wBTC) {
                 BTCCollateralBalance[sender] -= pnl;
             }
         }
     }
 
-    function sendCollateralAmountToMainnet() external payable {
+    function sendCollateralAmountToGnosis() external payable {
         uint256[3] memory collateralBalances;
         collateralBalances[0] = USDCCollateralBalance[msg.sender];
         collateralBalances[1] = ETHCollateralBalance[msg.sender];
         collateralBalances[2] = BTCCollateralBalance[msg.sender];
 
+        uint32 _destinationChain;
+        bytes32 _recipient;
         _destinationChain = gnosisMainnet;
         _recipient = gnosisSpoke;
 
         bytes32 messageId = IMailbox(mailboxContract).dispatch(
             _destinationChain,
-            _addressToBytes32(_recipient),
+            _recipient,
             bytes(abi.encode(collateralBalances[0], collateralBalances[1], collateralBalances[2]))
         );
 
         igp.payForGas{value: msg.value}(
-            messageID,
+            messageId,
             _destinationChain,
             gasAmount,
             msg.sender 
@@ -168,17 +175,19 @@ contract HyPerpsHub is Ownable{
         collateralBalances[1] = ETHCollateralBalance[msg.sender];
         collateralBalances[2] = BTCCollateralBalance[msg.sender];
 
+        uint32 _destinationChain;
+        bytes32 _recipient;
         _destinationChain = pzkevmTestnet;
         _recipient = pzkevmSpoke;
 
         bytes32 messageId = IMailbox(mailboxContract).dispatch(
             _destinationChain,
-            _addressToBytes32(_recipient),
+            _recipient,
             bytes(abi.encode(collateralBalances[0], collateralBalances[1], collateralBalances[2]))
         );
 
         igp.payForGas{value: msg.value}(
-            messageID,
+            messageId,
             _destinationChain,
             gasAmount,
             msg.sender 
@@ -398,14 +407,14 @@ contract HyPerpsHub is Ownable{
         BTCPrice = newBTCPrice;
     }
 
-    function updateGnosisSpoke(address newGnosisSpokeAddress) onlyOwner() {
-        gnosisSpoke = newGnosisSpokeAddress;
+    function updateGnosisSpoke(address newGnosisSpokeAddress) external onlyOwner() {
+        gnosisSpoke = _addressToBytes32(newGnosisSpokeAddress);
     }
 
-    function updatePzkevmSpoke(address newPzkevmSpokeAddress) onlyOwner() {
-        pzkevmSpoke = newPzkevmSpokeAddress;
+    function updatePzkevmSpoke(address newPzkevmSpokeAddress) external onlyOwner() {
+        pzkevmSpoke = _addressToBytes32(newPzkevmSpokeAddress);
     }
 
-}
+
 
 }
