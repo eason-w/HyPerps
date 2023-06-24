@@ -42,7 +42,6 @@ contract HyPerpsHub is Ownable{
     address mailboxContract;
     address gnosisSpoke;
     address pzkevmSpoke;
-    
 
     uint32 gnosisMainnet = 100;
     uint32 pzkevmTestnet = 1442;
@@ -118,7 +117,72 @@ contract HyPerpsHub is Ownable{
     }
 
     // CrossChain funtions
-    function handle(uint32 _origin, bytes32 _sender, bytes calldata _message) external onlyMailbox {
+    function handle(uint32 _origin, bytes32 _sender, bytes calldata _body) external onlyMailbox {
+        (address sender, uint256 pnl, address collateralType) = abi.decode(_body, (address, uint256, address));
+
+        if (pnl > 0) {
+            if (position.collateralType == USDC) {
+                USDCCollateralBalance[sender] += pnl;
+            } else if (position.collateralType == wETH) {
+                ETHCollateralBalance[sender] += pnl;
+            } else if (position.collateralType == wBTC) {
+                BTCCollateralBalance[sender] += pnl;
+            }
+        } else {
+            if (position.collateralType == USDC) {
+                USDCCollateralBalance[sender] -= pnl;
+            } else if (position.collateralType == wETH) {
+                ETHCollateralBalance[sender] -= pnl;
+            } else if (position.collateralType == wBTC) {
+                BTCCollateralBalance[sender] -= pnl;
+            }
+        }
+    }
+
+    function sendCollateralAmountToMainnet() external payable {
+        uint256[3] memory collateralBalances;
+        collateralBalances[0] = USDCCollateralBalance[msg.sender];
+        collateralBalances[1] = ETHCollateralBalance[msg.sender];
+        collateralBalances[2] = BTCCollateralBalance[msg.sender];
+
+        _destinationChain = gnosisMainnet;
+        _recipient = gnosisSpoke;
+
+        bytes32 messageId = IMailbox(mailboxContract).dispatch(
+            _destinationChain,
+            _addressToBytes32(_recipient),
+            bytes(abi.encode(collateralBalances[0], collateralBalances[1], collateralBalances[2]))
+        );
+
+        igp.payForGas{value: msg.value}(
+            messageID,
+            _destinationChain,
+            gasAmount,
+            msg.sender 
+        );
+    }
+
+    function sendCollateralAmountToPzkevm() external payable {
+        uint256[3] memory collateralBalances;
+        collateralBalances[0] = USDCCollateralBalance[msg.sender];
+        collateralBalances[1] = ETHCollateralBalance[msg.sender];
+        collateralBalances[2] = BTCCollateralBalance[msg.sender];
+
+        _destinationChain = pzkevmTestnet;
+        _recipient = pzkevmSpoke;
+
+        bytes32 messageId = IMailbox(mailboxContract).dispatch(
+            _destinationChain,
+            _addressToBytes32(_recipient),
+            bytes(abi.encode(collateralBalances[0], collateralBalances[1], collateralBalances[2]))
+        );
+
+        igp.payForGas{value: msg.value}(
+            messageID,
+            _destinationChain,
+            gasAmount,
+            msg.sender 
+        );
     }
 
 
