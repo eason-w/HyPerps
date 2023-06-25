@@ -41,14 +41,12 @@ contract HyPerpsHub is Ownable{
 
     address mailboxContract;
 
-    bytes32 gnosisSpoke;
-    bytes32 pzkevmSpoke;
+    bytes32 arbitrumSpoke;
 
-    uint32 gnosisMainnet = 100;
-    uint32 pzkevmTestnet = 1442;
+    uint32 arbitrumTestnet = 421613;
 
     IInterchainGasPaymaster igp = IInterchainGasPaymaster(0x8f9C3888bFC8a5B25AED115A82eCbb788b196d2a);
-    uint256 gasAmount = 300000;
+    uint256 gasAmount = 500000;
 
     // Events
     event LiquidityDeposited(address indexed user, address indexed liquidityType, uint256 amount);
@@ -81,6 +79,18 @@ contract HyPerpsHub is Ownable{
     }
 
     // Read functions    
+    function getUSDCPrice() external view returns (uint256) {
+        return USDCPrice;
+    }
+
+    function getETHPrice() external view returns (uint256) {
+        return ETHPrice;
+    }
+
+    function getBTCPrice() external view returns (uint256) {
+        return BTCPrice;
+    }
+
     function getTotalUSDCollateral(address user) external view returns (uint256) {
         uint256 totalCollateral = 0;
         totalCollateral += USDCCollateralBalance[user];
@@ -144,7 +154,7 @@ contract HyPerpsHub is Ownable{
         }
     }
 
-    function sendCollateralAmountToGnosis() external payable {
+    function sendCollateralAmountToArbitrum() external payable {
         uint256[3] memory collateralBalances;
         collateralBalances[0] = USDCCollateralBalance[msg.sender];
         collateralBalances[1] = ETHCollateralBalance[msg.sender];
@@ -152,33 +162,8 @@ contract HyPerpsHub is Ownable{
 
         uint32 _destinationChain;
         bytes32 _recipient;
-        _destinationChain = gnosisMainnet;
-        _recipient = gnosisSpoke;
-
-        bytes32 messageId = IMailbox(mailboxContract).dispatch(
-            _destinationChain,
-            _recipient,
-            bytes(abi.encode(msg.sender, collateralBalances[0], collateralBalances[1], collateralBalances[2]))
-        );
-
-        igp.payForGas{value: msg.value}(
-            messageId,
-            _destinationChain,
-            gasAmount,
-            msg.sender 
-        );
-    }
-
-    function sendCollateralAmountToPzkevm() external payable {
-        uint256[3] memory collateralBalances;
-        collateralBalances[0] = USDCCollateralBalance[msg.sender];
-        collateralBalances[1] = ETHCollateralBalance[msg.sender];
-        collateralBalances[2] = BTCCollateralBalance[msg.sender];
-
-        uint32 _destinationChain;
-        bytes32 _recipient;
-        _destinationChain = pzkevmTestnet;
-        _recipient = pzkevmSpoke;
+        _destinationChain = arbitrumTestnet;
+        _recipient = arbitrumSpoke;
 
         bytes32 messageId = IMailbox(mailboxContract).dispatch(
             _destinationChain,
@@ -272,7 +257,7 @@ contract HyPerpsHub is Ownable{
     }
 
     // Public write functions, position manager collateral functions
-    function openPosition(address assetType, address collateralType, uint256 collateralSize, uint256 leverage, address collateralChain) external {
+    function openPosition(address assetType, address collateralType, uint256 collateralSize, uint256 leverage) external {
         require(collateralSize > 0, "Invalid collateral size");
         require(leverage > 0 && leverage <= 10, "Invalid leverage value");
         if (collateralType == USDC) {
@@ -284,11 +269,13 @@ contract HyPerpsHub is Ownable{
         uint256 positionSize = collateralSize * leverage;
 
         uint256 openingPrice;
+        uint256 _ETHPrice = ETHPrice;
+        uint256 _BTCPrice = BTCPrice;
 
         if (assetType == wETH) {
-            uint256 openingPrice = ETHPrice;
+            uint256 openingPrice = _ETHPrice;
         } else {
-            uint256 openingPrice = BTCPrice;
+            uint256 openingPrice = _BTCPrice;
         }
 
         uint256 liquidationPrice;
@@ -323,11 +310,15 @@ contract HyPerpsHub is Ownable{
     function closePosition(uint256 positionIndex) external onlyOpenPosition(positionIndex) {
         Position storage position = positions[positionIndex];
 
+        
         uint256 closingPrice;
+        uint256 _ETHPrice = ETHPrice;
+        uint256 _BTCPrice = BTCPrice;
+
         if (position.assetType == wETH) {
-            uint256 closingPrice = ETHPrice;
+            uint256 closingPrice = _ETHPrice;
         } else {
-            uint256 closingPrice = BTCPrice;
+            uint256 closingPrice = _BTCPrice;
         }
 
         if (position.collateralType == USDC) {
@@ -364,10 +355,12 @@ contract HyPerpsHub is Ownable{
         Position storage position = positions[positionIndex];
 
         uint256 currentPrice;
+        uint256 _ETHPrice = ETHPrice;
+        uint256 _BTCPrice = BTCPrice;
         if (position.assetType == wETH) {
-            uint256 currentPrice = ETHPrice;
+            uint256 currentPrice = _ETHPrice;
         } else {
-            uint256 currentPrice = BTCPrice;
+            uint256 currentPrice = _BTCPrice;
         }
 
         if ((position.collateralType == USDC && currentPrice >= position.liquidationPrice) ||
@@ -407,12 +400,12 @@ contract HyPerpsHub is Ownable{
         BTCPrice = newBTCPrice;
     }
 
-    function updateGnosisSpoke(address newGnosisSpokeAddress) external onlyOwner() {
-        gnosisSpoke = _addressToBytes32(newGnosisSpokeAddress);
+    function updateArbitrumSpoke(address newArbitrumSpokeAddress) external onlyOwner() {
+        arbitrumSpoke = _addressToBytes32(newArbitrumSpokeAddress);
     }
 
-    function updatePzkevmSpoke(address newPzkevmSpokeAddress) external onlyOwner() {
-        pzkevmSpoke = _addressToBytes32(newPzkevmSpokeAddress);
+    function changeGasAmount(uint256 newGasAmount) external onlyOwner() {
+        gasAmount = newGasAmount;
     }
 
 

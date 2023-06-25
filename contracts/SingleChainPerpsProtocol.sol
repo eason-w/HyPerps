@@ -62,6 +62,18 @@ contract SingleChainPerpsProtocol is Ownable{
     // onlyOwner() is also a modifier here, imported from OpenZeppelin
 
     // Read functions    
+    function getUSDCPrice() external view returns (uint256) {
+        return USDCPrice;
+    }
+
+    function getETHPrice() external view returns (uint256) {
+        return ETHPrice;
+    }
+
+    function getBTCPrice() external view returns (uint256) {
+        return BTCPrice;
+    }
+
     function getTotalUSDCollateral(address user) external view returns (uint256) {
         uint256 totalCollateral = 0;
         totalCollateral += USDCCollateralBalance[user];
@@ -176,7 +188,7 @@ contract SingleChainPerpsProtocol is Ownable{
     }
 
     // Public write functions, position manager collateral functions
-    function openPosition(address assetType, address collateralType, uint256 collateralSize, uint256 leverage, address collateralChain) external {
+    function openPosition(address assetType, address collateralType, uint256 collateralSize, uint256 leverage) external {
         require(collateralSize > 0, "Invalid collateral size");
         require(leverage > 0 && leverage <= 10, "Invalid leverage value");
         if (collateralType == USDC) {
@@ -188,11 +200,12 @@ contract SingleChainPerpsProtocol is Ownable{
         uint256 positionSize = collateralSize * leverage;
 
         uint256 openingPrice;
-
+        uint256 _ETHPrice = ETHPrice;
+        uint256 _BTCPrice = BTCPrice;
         if (assetType == wETH) {
-            uint256 openingPrice = ETHPrice;
+            uint256 openingPrice = _ETHPrice;
         } else {
-            uint256 openingPrice = BTCPrice;
+            uint256 openingPrice = _BTCPrice;
         }
 
         uint256 liquidationPrice;
@@ -228,10 +241,13 @@ contract SingleChainPerpsProtocol is Ownable{
         Position storage position = positions[positionIndex];
 
         uint256 closingPrice;
+        uint256 _ETHPrice = ETHPrice;
+        uint256 _BTCPrice = BTCPrice;
+
         if (position.assetType == wETH) {
-            uint256 closingPrice = ETHPrice;
+            uint256 closingPrice = _ETHPrice;
         } else {
-            uint256 closingPrice = BTCPrice;
+            uint256 closingPrice = _BTCPrice;
         }
 
         if (position.collateralType == USDC) {
@@ -268,10 +284,12 @@ contract SingleChainPerpsProtocol is Ownable{
         Position storage position = positions[positionIndex];
 
         uint256 currentPrice;
+        uint256 _ETHPrice = ETHPrice;
+        uint256 _BTCPrice = BTCPrice;
         if (position.assetType == wETH) {
-            uint256 currentPrice = ETHPrice;
+            uint256 currentPrice = _ETHPrice;
         } else {
-            uint256 currentPrice = BTCPrice;
+            uint256 currentPrice = _BTCPrice;
         }
 
         if ((position.collateralType == USDC && currentPrice >= position.liquidationPrice) ||

@@ -16,6 +16,7 @@ const ARBITRUM_URL = process.env.ARBITRUM_URL
 const PRIVATE_KEY = process.env.PRIVATE_KEY 
 // const POLYGON_ZK_EVM_ETHERSCAN_API_KEY = process.env.POLYGON_ZK_EVM_ETHERSCAN_API_KEY 
 // const GNOSIS_ETHERSCAN_API_KEY = process.env.GNOSIS_ETHERSCAN_API_KEY 
+const ARBITRUM_ETHERSCAN_API_KEY = process.env.ARBITRUM_ETHERSCAN_API_KEY
 
 /*
       📡 This is where you configure your deploy configuration for 🏗 scaffold-eth
@@ -79,7 +80,7 @@ module.exports = {
     },
     arbitrumGoerli: {
       url: `${ARBITRUM_URL}`,
-      gasPrice: 1000000000,
+      gasPrice: 100000000000,
       accounts:[`0x${PRIVATE_KEY}`],
       chainId: 421613,
       gasMultiplier: 5,
@@ -137,7 +138,7 @@ module.exports = {
     },
     customChains: [
       {
-        network: "arbitrum_goerli",
+        network: "arbitrumGoerli",
         chainId: 421613 ,
         urls: {
           apiURL: "https://api-goerli.arbiscan.io/api",

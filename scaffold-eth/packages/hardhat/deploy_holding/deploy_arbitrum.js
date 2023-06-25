@@ -20,7 +20,7 @@ module.exports = async ({ getNamedAccounts, deployments, getChainId }) => {
   await deploy("HyPerpsSpoke", {
     // Learn more about args here: https://www.npmjs.com/package/hardhat-deploy#deploymentsdeploy
     from: deployer,
-    args: ["0x3861e9F29fcAFF738906c7a3a495583eE7Ca4C18", "0x58d7ccbE88Fe805665eB0b6c219F2c27D351E649", "0x29a500d11467A2160a02ABa4f9F94983E458d873", "0xCC737a94FecaeC165AbCf12dED095BB13F037685"]
+    args: ["0x3861e9F29fcAFF738906c7a3a495583eE7Ca4C18", "0x58d7ccbE88Fe805665eB0b6c219F2c27D351E649", "0x29a500d11467A2160a02ABa4f9F94983E458d873", "0xCC737a94FecaeC165AbCf12dED095BB13F037685"],
     log: true,
     // waitConfirmations: 5,
   });
@@ -78,4 +78,4 @@ module.exports = async ({ getNamedAccounts, deployments, getChainId }) => {
     console.error("Verification Error =>", error);
   }
 };
-module.exports.tags = ["HyPerpsHub"];
+module.exports.tags = ["HyPerpsSpoke"];
