@@ -269,12 +269,10 @@ contract HyPerpsHub is Ownable{
         uint256 positionSize = collateralSize * leverage;
 
         uint256 openingPrice;
-        uint256 _ETHPrice = ETHPrice;
-        uint256 _BTCPrice = BTCPrice;
         if (assetType == wETH) {
-            uint256 openingPrice = _ETHPrice;
+            openingPrice = ETHPrice;
         } else {
-            uint256 openingPrice = _BTCPrice;
+            openingPrice = BTCPrice;
         }
 
         uint256 liquidationPrice;
@@ -311,13 +309,10 @@ contract HyPerpsHub is Ownable{
 
         
         uint256 closingPrice;
-        uint256 _ETHPrice = ETHPrice;
-        uint256 _BTCPrice = BTCPrice;
-
         if (position.assetType == wETH) {
-            uint256 closingPrice = _ETHPrice;
+            closingPrice = ETHPrice;
         } else {
-            uint256 closingPrice = _BTCPrice;
+            closingPrice = BTCPrice;
         }
 
         if (position.collateralType == USDC) {
@@ -354,12 +349,10 @@ contract HyPerpsHub is Ownable{
         Position storage position = positions[positionIndex];
 
         uint256 currentPrice;
-        uint256 _ETHPrice = ETHPrice;
-        uint256 _BTCPrice = BTCPrice;
         if (position.assetType == wETH) {
-            uint256 currentPrice = _ETHPrice;
+            currentPrice = ETHPrice;
         } else {
-            uint256 currentPrice = _BTCPrice;
+            currentPrice = BTCPrice;
         }
 
         if ((position.collateralType == USDC && currentPrice >= position.liquidationPrice) ||
