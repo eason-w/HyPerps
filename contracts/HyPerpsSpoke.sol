@@ -49,7 +49,8 @@ contract HyPerpsSpoke is Ownable{
 
     // igp of pzkevm: 0x57e69f9cC96Fb9324a196322367520ecE437d896
     // igp of Gnosis: 0x6cA0B6D22da47f091B7613223cD4BB03a2d77918
-    IInterchainGasPaymaster igp = IInterchainGasPaymaster(0x8f9C3888bFC8a5B25AED115A82eCbb788b196d2a);
+    // IInterchainGasPaymaster igp = IInterchainGasPaymaster();
+    IInterchainGasPaymaster igp;
     uint256 gasAmount = 300000;
 
     // Events
@@ -65,11 +66,12 @@ contract HyPerpsSpoke is Ownable{
     // Gnosis mailbox: 0x35231d4c2D8B8ADcB5617A638A0c4548684c7C70
     // Pzkevm mailbox: 0x0282ee93886E62627C863D9Ec88F1408eA7Aeb3B
     // Constructor
-    constructor(address _USDC, address _wETH, address _wBTC, address _mailboxContract) {
+    constructor(address _USDC, address _wETH, address _wBTC, address _mailboxContract, address _igp) {
         USDC = _USDC;
         wETH = _wETH;
         wBTC = _wBTC;
         mailboxContract = _mailboxContract;
+        igp = IInterchainGasPaymaster(_igp);
     }
     
     // Modifiers
@@ -142,6 +144,7 @@ contract HyPerpsSpoke is Ownable{
 
         address collateralType = _collateralType;
 
+        uint256 pnl;
         pnl = pendingPnl[msg.sender];
 
         bytes32 messageId = IMailbox(mailboxContract).dispatch(
@@ -364,11 +367,7 @@ contract HyPerpsSpoke is Ownable{
         BTCPrice = newBTCPrice;
     }
 
-    function updateGnosisSpoke(address newGnosisSpokeAddress) external onlyOwner() {
-        gnosisSpoke = _addressToBytes32(newGnosisSpokeAddress);
-    }
-
-    function updatePzkevmSpoke(address newPzkevmSpokeAddress) external onlyOwner() {
-        pzkevmSpoke = _addressToBytes32(newPzkevmSpokeAddress);
+    function updateGoerliHub(address newGoerliHubAddress) external onlyOwner() {
+        goerliHub = _addressToBytes32(newGoerliHubAddress);
     }
 }
