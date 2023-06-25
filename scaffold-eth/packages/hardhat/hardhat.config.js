@@ -9,11 +9,13 @@ require("@nomicfoundation/hardhat-toolbox");
 require("hardhat-deploy");
 
 const { isAddress, getAddress, formatUnits, parseUnits } = utils;
-const PZKEVM_TESTNET_URL = process.env.PZKEVM_TESTNET_URL 
+// const PZKEVM_TESTNET_URL = process.env.PZKEVM_TESTNET_URL 
 const GOERLI_URL = process.env.GOERLI_URL 
-const GNOSIS_MAINNET_URL = process.env.GNOSIS_MAINNET_URL 
+const ARBITRUM_URL = process.env.ARBITRUM_URL
+// const GNOSIS_MAINNET_URL = process.env.GNOSIS_MAINNET_URL 
 const PRIVATE_KEY = process.env.PRIVATE_KEY 
-
+// const POLYGON_ZK_EVM_ETHERSCAN_API_KEY = process.env.POLYGON_ZK_EVM_ETHERSCAN_API_KEY 
+// const GNOSIS_ETHERSCAN_API_KEY = process.env.GNOSIS_ETHERSCAN_API_KEY 
 
 /*
       📡 This is where you configure your deploy configuration for 🏗 scaffold-eth
@@ -75,18 +77,25 @@ module.exports = {
       chainId: 5,
       gasMultiplier: 5,
     },
-    gnosis: {
-      url: `${GNOSIS_MAINNET_URL}`,
-      gasPrice: 10000000000,
-      accounts: [`0x${PRIVATE_KEY}`],
-      chainId: 100,
+    arbitrumGoerli: {
+      url: `${ARBITRUM_URL}`,
+      gasPrice: 1000000000,
+      accounts:[`0x${PRIVATE_KEY}`],
+      chainId: 421613,
       gasMultiplier: 5,
     },
-    pzkevm_testnet: {
-      url: `${PZKEVM_TESTNET_URL}`,
-      accounts: [`0x${PRIVATE_KEY}`],
-      chainId: 1442,
-    },
+    // gnosis: {
+    //   url: `${GNOSIS_MAINNET_URL}`,
+    //   gasPrice: 10000000000,
+    //   accounts: [`0x${PRIVATE_KEY}`],
+    //   chainId: 100,
+    //   gasMultiplier: 5,
+    // },
+    // pzkevm_testnet: {
+    //   url: `${PZKEVM_TESTNET_URL}`,
+    //   accounts: [`0x${PRIVATE_KEY}`],
+    //   chainId: 1442,
+    // },
   },
   solidity: {
     compilers: [
@@ -120,15 +129,37 @@ module.exports = {
   },
   etherscan: {
     apiKey: {
-      mainnet: "DNXJA8RX2Q3VZ4URQIWP7Z68CJXQZSC6AW",
       goerli: "DNXJA8RX2Q3VZ4URQIWP7Z68CJXQZSC6AW",
-      kovan: "DNXJA8RX2Q3VZ4URQIWP7Z68CJXQZSC6AW",
-      rinkeby: "DNXJA8RX2Q3VZ4URQIWP7Z68CJXQZSC6AW",
-      ropsten: "DNXJA8RX2Q3VZ4URQIWP7Z68CJXQZSC6AW",
-      sepolia: "DNXJA8RX2Q3VZ4URQIWP7Z68CJXQZSC6AW",
+      arbitrumGoerli: `${ARBITRUM_ETHERSCAN_API_KEY}`,
+      // gnosis: `${GNOSIS_ETHERSCAN_API_KEY}`,
+      // pzkevm_testnet: `${POLYGON_ZK_EVM_ETHERSCAN_API_KEY}`
       // add other network's API key here
     },
-  },
+    customChains: [
+      {
+        network: "arbitrum_goerli",
+        chainId: 421613 ,
+        urls: {
+          apiURL: "https://api-goerli.arbiscan.io/api",
+          browserURL: "hhttps://goerli.arbiscan.io/"
+        }
+      },
+      // {
+      //   network: "pzkevm_testnet",
+      //   chainId: 1442,
+      //   urls: {
+      //     apiURL: "https://api-testnet-zkevm.polygonscan.com/api",
+      //     browserURL: "https://testnet-zkevm.polygonscan.com"
+      //   }
+      // },
+      // {
+      //   network: "gnosis",
+      //   chainId: 100,
+      //   urls: {
+      //     apiURL: "https://api.gnosisscan.io/api",
+      //   }
+      // },
+    ],
   abiExporter: {
     path: "../react-app/src/contracts/ABI",
     runOnCompile: true,
@@ -138,6 +169,7 @@ module.exports = {
     spacing: 2,
     pretty: false,
   },
+}
 };
 
 const DEBUG = false;

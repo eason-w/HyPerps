@@ -41,14 +41,12 @@ contract HyPerpsHub is Ownable{
 
     address mailboxContract;
 
-    bytes32 gnosisSpoke;
-    bytes32 pzkevmSpoke;
+    bytes32 arbitrumSpoke;
 
-    uint32 gnosisMainnet = 100;
-    uint32 pzkevmTestnet = 1442;
+    uint32 arbitrumTestnet = 421613;
 
     IInterchainGasPaymaster igp = IInterchainGasPaymaster(0x8f9C3888bFC8a5B25AED115A82eCbb788b196d2a);
-    uint256 gasAmount = 300000;
+    uint256 gasAmount = 500000;
 
     // Events
     event LiquidityDeposited(address indexed user, address indexed liquidityType, uint256 amount);
@@ -144,7 +142,7 @@ contract HyPerpsHub is Ownable{
         }
     }
 
-    function sendCollateralAmountToGnosis() external payable {
+    function sendCollateralAmountToArbitrum() external payable {
         uint256[3] memory collateralBalances;
         collateralBalances[0] = USDCCollateralBalance[msg.sender];
         collateralBalances[1] = ETHCollateralBalance[msg.sender];
@@ -152,33 +150,8 @@ contract HyPerpsHub is Ownable{
 
         uint32 _destinationChain;
         bytes32 _recipient;
-        _destinationChain = gnosisMainnet;
-        _recipient = gnosisSpoke;
-
-        bytes32 messageId = IMailbox(mailboxContract).dispatch(
-            _destinationChain,
-            _recipient,
-            bytes(abi.encode(msg.sender, collateralBalances[0], collateralBalances[1], collateralBalances[2]))
-        );
-
-        igp.payForGas{value: msg.value}(
-            messageId,
-            _destinationChain,
-            gasAmount,
-            msg.sender 
-        );
-    }
-
-    function sendCollateralAmountToPzkevm() external payable {
-        uint256[3] memory collateralBalances;
-        collateralBalances[0] = USDCCollateralBalance[msg.sender];
-        collateralBalances[1] = ETHCollateralBalance[msg.sender];
-        collateralBalances[2] = BTCCollateralBalance[msg.sender];
-
-        uint32 _destinationChain;
-        bytes32 _recipient;
-        _destinationChain = pzkevmTestnet;
-        _recipient = pzkevmSpoke;
+        _destinationChain = arbitrumTestnet;
+        _recipient = arbitrumSpoke;
 
         bytes32 messageId = IMailbox(mailboxContract).dispatch(
             _destinationChain,
@@ -407,12 +380,12 @@ contract HyPerpsHub is Ownable{
         BTCPrice = newBTCPrice;
     }
 
-    function updateGnosisSpoke(address newGnosisSpokeAddress) external onlyOwner() {
-        gnosisSpoke = _addressToBytes32(newGnosisSpokeAddress);
+    function updateArbitrumSpoke(address newArbitrumSpokeAddress) external onlyOwner() {
+        arbitrumSpoke = _addressToBytes32(newArbitrumSpokeAddress);
     }
 
-    function updatePzkevmSpoke(address newPzkevmSpokeAddress) external onlyOwner() {
-        pzkevmSpoke = _addressToBytes32(newPzkevmSpokeAddress);
+    function changeGasAmount(uint256 newGasAmount) external onlyOwner() {
+        gasAmount = newGasAmount;
     }
 
 

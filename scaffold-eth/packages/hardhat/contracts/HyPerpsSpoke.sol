@@ -47,11 +47,9 @@ contract HyPerpsSpoke is Ownable{
 
     uint32 goerliTestnet = 5;
 
-    // igp of pzkevm: 0x57e69f9cC96Fb9324a196322367520ecE437d896
-    // igp of Gnosis: 0x6cA0B6D22da47f091B7613223cD4BB03a2d77918
-    // IInterchainGasPaymaster igp = IInterchainGasPaymaster();
-    IInterchainGasPaymaster igp;
-    uint256 gasAmount = 300000;
+    // igp of Arbitrum Goerli: 0x8f9C3888bFC8a5B25AED115A82eCbb788b196d2a
+    IInterchainGasPaymaster igp = IInterchainGasPaymaster(0x8f9C3888bFC8a5B25AED115A82eCbb788b196d2a);
+    uint256 gasAmount = 500000;
 
     // Events
     event LiquidityDeposited(address indexed user, address indexed liquidityType, uint256 amount);
@@ -63,15 +61,13 @@ contract HyPerpsSpoke is Ownable{
     event PositionLiquidated(address indexed liquidator, address indexed positionOpener, uint256 positionIndex, address indexed collateralType, uint256 collateralSize);
     
     // Goerli addresses: USDC, wETH, wBTC: 0x3861e9F29fcAFF738906c7a3a495583eE7Ca4C18, 0x58d7ccbE88Fe805665eB0b6c219F2c27D351E649, 0x29a500d11467A2160a02ABa4f9F94983E458d873
-    // Gnosis mailbox: 0x35231d4c2D8B8ADcB5617A638A0c4548684c7C70
-    // Pzkevm mailbox: 0x0282ee93886E62627C863D9Ec88F1408eA7Aeb3B
+    // Arbitrum mailbox: 0xCC737a94FecaeC165AbCf12dED095BB13F037685
     // Constructor
-    constructor(address _USDC, address _wETH, address _wBTC, address _mailboxContract, address _igp) {
+    constructor(address _USDC, address _wETH, address _wBTC, address _mailboxContract) {
         USDC = _USDC;
         wETH = _wETH;
         wBTC = _wBTC;
         mailboxContract = _mailboxContract;
-        igp = IInterchainGasPaymaster(_igp);
     }
     
     // Modifiers
@@ -369,5 +365,9 @@ contract HyPerpsSpoke is Ownable{
 
     function updateGoerliHub(address newGoerliHubAddress) external onlyOwner() {
         goerliHub = _addressToBytes32(newGoerliHubAddress);
+    }
+        
+    function changeGasAmount(uint256 newGasAmount) external onlyOwner() {
+        gasAmount = newGasAmount;
     }
 }
