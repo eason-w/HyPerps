@@ -9,6 +9,11 @@ require("@nomicfoundation/hardhat-toolbox");
 require("hardhat-deploy");
 
 const { isAddress, getAddress, formatUnits, parseUnits } = utils;
+const PZKEVM_TESTNET_URL = process.env.PZKEVM_TESTNET_URL 
+const GOERLI_URL = process.env.GOERLI_URL 
+const GNOSIS_MAINNET_URL = process.env.GNOSIS_MAINNET_URL 
+const PRIVATE_KEY = process.env.PRIVATE_KEY 
+
 
 /*
       📡 This is where you configure your deploy configuration for 🏗 scaffold-eth
@@ -64,18 +69,21 @@ module.exports = {
       url: "http://127.0.0.1:8545/",
     },
     goerli: {
-      url: ${GOERLI_URL},
+      url: `${GOERLI_URL}`,
+      gasPrice: 1000000000,
       accounts:[`0x${PRIVATE_KEY}`],
       chainId: 5,
+      gasMultiplier: 5,
     },
     gnosis: {
-      url: ${GNOSIS_MAINNET_URL},
-      gasPrice: 1000000000,
+      url: `${GNOSIS_MAINNET_URL}`,
+      gasPrice: 10000000000,
       accounts: [`0x${PRIVATE_KEY}`],
       chainId: 100,
+      gasMultiplier: 5,
     },
     pzkevm_testnet: {
-      url: ${PZKEVM_TESTNET_URL},
+      url: `${PZKEVM_TESTNET_URL}`,
       accounts: [`0x${PRIVATE_KEY}`],
       chainId: 1442,
     },
