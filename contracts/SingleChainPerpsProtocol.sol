@@ -224,14 +224,6 @@ contract SingleChainPerpsProtocol is Ownable{
             liquidationPrice: liquidationPrice
         }));
 
-        if (collateralType == USDC) {
-            USDCCollateralBalance[msg.sender] -= collateralSize;
-        } else if (collateralType == wETH) {
-            ETHCollateralBalance[msg.sender] -= collateralSize;
-        } else if (collateralType == wBTC) {
-            BTCCollateralBalance[msg.sender] -= collateralSize;
-        }
-
         emit PositionOpened(msg.sender, assetType, collateralType, collateralSize, leverage);
     }
     
@@ -245,13 +237,13 @@ contract SingleChainPerpsProtocol is Ownable{
             closingPrice = BTCPrice;
         }
 
+        uint256 pnl;
         if (position.collateralType == USDC) {
-            uint256 pnl = ((position.openingPrice / closingPrice - 1) * position.leverage) * position.collateralSize;
+            pnl = (((position.openingPrice * 100 / closingPrice) - 100) * position.leverage) * position.collateralSize / 100;
         } else {
-            uint256 pnl = ((closingPrice / position.openingPrice - 1) * position.leverage) * position.collateralSize;
+            pnl = ((closingPrice * 100 / position.openingPrice - 100) * position.leverage) * position.collateralSize / 100;
         }
 
-        uint256 pnl;
         if (pnl > 0) {
             if (position.collateralType == USDC) {
                 USDCCollateralBalance[msg.sender] += pnl;
@@ -293,13 +285,13 @@ contract SingleChainPerpsProtocol is Ownable{
             uint256 collateralSize = position.collateralSize;
 
             if (collateralType == USDC) {
-                USDCCollateralBalance[liquidator] += collateralSize*1/20;
+                USDCCollateralBalance[liquidator] += collateralSize/20;
                 USDCCollateralBalance[positionOpener] -= collateralSize;
             } else if (collateralType == wETH) {
-                ETHCollateralBalance[liquidator] += collateralSize*1/20;
+                ETHCollateralBalance[liquidator] += collateralSize/20;
                 ETHCollateralBalance[positionOpener] -= collateralSize;
             } else if (collateralType == wBTC) {
-                BTCCollateralBalance[liquidator] += collateralSize*1/20;
+                BTCCollateralBalance[liquidator] += collateralSize/20;
                 BTCCollateralBalance[positionOpener] -= collateralSize;
             }
 

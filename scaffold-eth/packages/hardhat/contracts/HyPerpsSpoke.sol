@@ -310,13 +310,13 @@ contract HyPerpsSpoke is Ownable{
             closingPrice = BTCPrice;
         }
 
+        uint256 pnl;
         if (position.collateralType == USDC) {
-            uint256 pnl = ((position.openingPrice / closingPrice - 1) * position.leverage) * position.collateralSize;
+            pnl = (((position.openingPrice * 100 / closingPrice) - 100) * position.leverage) * position.collateralSize / 100;
         } else {
-            uint256 pnl = ((closingPrice / position.openingPrice - 1) * position.leverage) * position.collateralSize;
+            pnl = ((closingPrice * 100 / position.openingPrice - 100) * position.leverage) * position.collateralSize / 100;
         }
 
-        uint256 pnl;
         if (pnl > 0) {
             pendingPnl[msg.sender] += pnl;
         } else {
