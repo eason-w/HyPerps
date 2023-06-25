@@ -158,7 +158,7 @@ contract HyPerpsHub is Ownable{
         bytes32 messageId = IMailbox(mailboxContract).dispatch(
             _destinationChain,
             _recipient,
-            bytes(abi.encode(collateralBalances[0], collateralBalances[1], collateralBalances[2]))
+            bytes(abi.encode(msg.sender, collateralBalances[0], collateralBalances[1], collateralBalances[2]))
         );
 
         igp.payForGas{value: msg.value}(
@@ -183,7 +183,7 @@ contract HyPerpsHub is Ownable{
         bytes32 messageId = IMailbox(mailboxContract).dispatch(
             _destinationChain,
             _recipient,
-            bytes(abi.encode(collateralBalances[0], collateralBalances[1], collateralBalances[2]))
+            bytes(abi.encode(msg.sender, collateralBalances[0], collateralBalances[1], collateralBalances[2]))
         );
 
         igp.payForGas{value: msg.value}(
