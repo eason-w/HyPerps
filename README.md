@@ -1,6 +1,6 @@
 # HyPerps
 HyPerps is a cross chain perpetual futures protocol built on top of Hyperlane. HyPerps allows users to deposit collateral on one chain, then trade perpetual futures on another chain. HyPerps uses an oracle based model, allowing users to open and close positions at any time with the price execution according to the oracle feed. Traders trade against the liquidity of HyPerps, which can live on any chain that HyPerps is deployed on. 
-For more details, read the HyPerps Technical Explanation document. 
+For more details, read [HyPerps.pdf](https://github.com/eason-w/HyPerps/blob/main/HyPerps.pdf) or explore the [contracts](https://github.com/eason-w/HyPerps/). 
 
 HyPerps is still an MVP project built for the ETHGlobal Waterloo 2023 hackathon. Current deployments:
 - Ethereum Goerli: [HyPerpsHub](https://goerli.etherscan.io/address/0x2f9c977175e4836c1fe1c88e7c8c2192dfb0d41a)
